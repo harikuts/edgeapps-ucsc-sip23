@@ -1,5 +1,6 @@
 import client
 import copy
+import random
 
 
 class ClusterClient(client.Client):
@@ -33,26 +34,29 @@ class ClusterClient(client.Client):
 
     def get_sink(self, source_cluster_id):
         """For SatDISL - if a source with respect to source_cluster: given info about location of each satellite in
-        self's cluster and external source cluster and predicted training time for the epoch, calculate rank of sink
+        self's cluster and external source cluster and predicted training time for the epoch, calculate *rank* of sink
         node (in the given cluster) to the external source cluster (based on node predicted to be closest to the
         source_cluster at end of epoch)
 
         Sink_i,j calculation done with source_i,j communicating with source_j,i
         """
-
-        '''hard-coded arbitrary values for the sake of initial sim'''
-        if self.cluster.id == 0:
-            if source_cluster_id == 1:
-                return 3
-            if source_cluster_id == 2:
-                return 2
-        if self.cluster.id == 1:
-            if source_cluster_id == 0:
-                return 0
-            if source_cluster_id == 2:
-                return 3
-        if self.cluster.id == 2:
-            if source_cluster_id == 0:
-                return 3
-            if source_cluster_id == 1:
-                return 3
+        '''hard-coded arbitrary values for the sake of initial sim
+                if self.cluster.id == 0:
+                    if source_cluster_id == 1:
+                        return 3
+                    if source_cluster_id == 2:
+                        return 2
+                if self.cluster.id == 1:
+                    if source_cluster_id == 0:
+                        return 0
+                    if source_cluster_id == 2:
+                        return 3
+                if self.cluster.id == 2:
+                    if source_cluster_id == 0:
+                        return 3
+                    if source_cluster_id == 1:
+                        return 3
+        '''
+        '''random location for sink role (in reality based on satellite orbit intersection at end of epoch)'''
+        cluster_size = len(self.cluster.members)
+        return random.randint(0, cluster_size - 1)

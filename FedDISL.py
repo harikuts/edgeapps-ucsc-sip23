@@ -9,7 +9,7 @@ import copy
 
 # although algorithm is 'decentralized', server still needs to initialize all clients (after that server is completely
 # ignored)
-serv = server.Server()
+serv = server.Server() # for femnist_13users, only use 12 clients -- 13th client only has 5 samples
 # define clusters
 map_id_to_cluster = {0: 0, 1: 0, 2: 0, 3: 0, 4: 1, 5: 1, 6: 1, 7: 1, 8: 2, 9: 2, 10: 2, 11: 2}
 map_cluster_to_ids = {0: [0, 1, 2, 3], 1: [4, 5, 6, 7], 2: [8, 9, 10, 11]}
