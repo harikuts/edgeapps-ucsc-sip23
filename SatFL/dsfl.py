@@ -10,10 +10,10 @@ Model Distribution, 1st pass (along each cluster's ring structure): 2
 Model Distribution, 2nd pass: 3
 Partial Aggregation, 1st pass: 4
 Partial Aggregation, 2nd pass: 5
-Cluster Communication: 6+C
+Cluster Communication: 6+c
 
 
-(Simulated on 8-core Mac)
+(Simulated on 8-core M1 Mac)
 '''
 
 import random
@@ -86,7 +86,6 @@ if rank == server_rank:
                 paths[c][ind] = cluster_ranks[k][random.randint(0, len(cluster_ranks[k]) - 1)]
 
         comm.bcast(obj=paths, root=server_rank)
-        print("Paths, ", paths)
     # receive final global model (every satellite will contain the same one at the end of training)
     global_model_weights = comm.recv(source=0)
     self_model.set_weights(global_model_weights)

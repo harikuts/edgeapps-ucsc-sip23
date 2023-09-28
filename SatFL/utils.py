@@ -18,8 +18,9 @@ def get_num_samples(num_clients, dataset='non-iid'):
 
 
 def load_data(client_id, dataset='non-iid'):
+    """Load train and test data from data folder"""
     if dataset == 'non-iid':
-        path = 'data/femnist_niid_train.json'  # make sure to update server path (see server.__init__()
+        path = 'data/femnist_niid_train.json' 
         out = list()
         with open(path) as train:
             train_data = json.load(train)
@@ -51,10 +52,6 @@ def load_data(client_id, dataset='non-iid'):
 
 
 def create_model(dataset='non-iid'):
-    """for each (non-input/dropout) layer: there are two elements of get_weights(): list of weight vectors, list of bias for each unit
-        - list of weight vectors: for each unit of previous layer there is a weight vector of weights associated with the connection between that unit and each unit of the current layer
-        (each weight vector: lists the weights associated with the connection of the given unit to each unit of previous layer connecting to it)
-    """
     num_classes = 62
     image_size = 28
     # model credit: cnn.py in LEAF/models/femnist repo and https://www.kaggle.com/code/jeckowturtle/letter-emnist-cnn-92-training-acc-90-test-acc
@@ -63,34 +60,25 @@ def create_model(dataset='non-iid'):
     if dataset == 'non-iid':
         model.add(tf.keras.layers.Conv2D(filters=8, kernel_size=(3, 3), activation='relu'))
         model.add(tf.keras.layers.MaxPooling2D(pool_size=(2, 2),
-                                               strides=2))  # reduce spatial size - replace each 2x2 square with its max
+                                               strides=2))  
         model.add(tf.keras.layers.Conv2D(filters=16, kernel_size=(3, 3), padding="same",
-                                         activation='relu'))  # set padding="same" for output to have same size as input
+                                         activation='relu'))  
         model.add(tf.keras.layers.MaxPooling2D(pool_size=(2, 2), strides=2))
         model.add(tf.keras.layers.Conv2D(filters=24, kernel_size=(3, 3), padding="same", activation='relu'))  #
     if dataset == 'iid':
         model.add(tf.keras.layers.Conv2D(filters=8, kernel_size=(3, 3), activation='relu'))
         model.add(tf.keras.layers.MaxPooling2D(pool_size=(2, 2),
-                                               strides=2))  # reduce spatial size - replace each 2x2 square with its max
+                                               strides=2))  
         model.add(tf.keras.layers.Conv2D(filters=16, kernel_size=(3, 3), padding="same",
                                          activation='relu'))
         model.add(tf.keras.layers.MaxPooling2D(pool_size=(2, 2), strides=2))
         model.add(tf.keras.layers.Conv2D(filters=24, kernel_size=(3, 3), padding="same", activation='relu'))
 
 
-    model.add(tf.keras.layers.Flatten())  # reshape for neural network; shape inference with '-1'
+    model.add(tf.keras.layers.Flatten())  
     model.add(tf.keras.layers.Dense(units=128, activation='relu'))
     model.add(tf.keras.layers.Dense(units=num_classes, activation='softmax'))
     model.compile(optimizer=tf.keras.optimizers.legacy.Adam(learning_rate=.0003),
                 loss='sparse_categorical_crossentropy',
                 metrics=['accuracy'])
     return model
-
-
-# model = create_model('iid')
-# data = load_data(0, 'iid')
-# batch_size = 15
-# epochs = 100
-# model.fit(x=data[0], y=data[1], batch_size=batch_size,
-#            epochs=epochs,
-#            shuffle=True)

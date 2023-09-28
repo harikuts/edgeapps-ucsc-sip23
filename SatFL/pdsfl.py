@@ -1,4 +1,4 @@
-"""Parallelized DSFL algorithm with multiple source/sinks per cluster and no reliance on server during the training -
+"""Pairwise Inter-Plane Update with DSFL algorithm with multiple source/sinks per cluster and no reliance on server during the training -
 server is only used at beginning (to initiate training procedure) and at the end (to collect global model),
 but not during the training process (ie in between fedavg iterations)
 
@@ -20,7 +20,7 @@ Partial Aggregation, 2nd pass: 5
 Cluster Communication: 6
 
 
-(Simulated on 8-core Mac)
+(Simulated on 8-core M1 Mac)
 """
 import random
 from mpi4py import MPI
@@ -32,7 +32,7 @@ import copy
 comm = MPI.COMM_WORLD
 
 rank = comm.Get_rank()
-num_sats = 7  # 'sat' is shorthand for 'satellite'
+num_sats = 7  
 server_rank = num_sats
 self_model = utils.create_model('iid')  # every client/server has internal model
 # maps each satellite rank to a list of neighbor ranks (ring topology in-orbit -- 2 neighbors)
@@ -86,7 +86,6 @@ if rank == server_rank:
                     cluster_conns[c_2].append((j,i))
         for c in range(num_clusters-1):
             cluster_conns[c].sort(key=lambda a: (a[1],a[0])) # sort cluster connections to avoid deadlock when traversing
-        print("Cluster Conns: ", cluster_conns)
 
         comm.bcast(obj=cluster_conns, root=server_rank)
     # receive final global model (every satellite will contain the same one at the end of training)
@@ -109,7 +108,6 @@ if rank != server_rank:
         self_model.set_weights(model_info[1])
         if model_info[2] + 1 < len(cluster_ranks[map_rank_to_cluster_id[rank]]):  # make sure not sending model to sat alr having model
             comm.send(obj=(rank, copy.deepcopy(model_info[1]), model_info[2] + 1), dest=right_cluster_neighbor,tag=1)
-    # print('Initialized', self_model.get_weights()[0])
     external_clusters_aggregate = []  # aggregate of external cluster aggregates received by client in the previous epoch
     # Single client *can* receive multiple cluster aggregates
     # (filled with zeros if no external cluster aggregate was received)
@@ -165,7 +163,6 @@ if rank != server_rank:
         self_model.fit(x=data[0], y=data[1], batch_size=batch_size,
                        epochs=epochs,
                        shuffle=True)
-        print('After Local Training', rank, self_model.get_weights()[0][0])
         '''Partial Aggregation Phase'''
         partial_aggregate = copy.deepcopy(
             self_model.get_weights())  # outgoing partial aggregate (computed in aggregation phase)
@@ -188,7 +185,6 @@ if rank != server_rank:
                 partial_aggregate[ind] = local_weights[ind] * samples[rank] + weight
             self_model.set_weights(partial_aggregate)
 
-        print('End of first pass, Part Aggr', rank)
         '''second pass: propagate cluster aggregate'''
         if local_rank != 0:
             partial_aggregate = comm.recv(source=left_cluster_neighbor,tag=5)
@@ -207,7 +203,6 @@ if rank != server_rank:
         self_model.set_weights(scaled_weights)
 
         # end of second pass: every client in cluster stores cluster aggregate under self_model
-        print('After Partial Aggregation', rank, self_model.get_weights()[0][0])
         '''Cluster Communication Phase'''
         # clusters exchange cluster aggregates st every cluster ends up with every other cluster's aggregate in
         # addition to its own (which then combined to form global model)
@@ -216,7 +211,6 @@ if rank != server_rank:
         ext_clust_aggr = []
         for conn in cluster_conns[map_rank_to_cluster_id[rank]]:
             if rank == conn[0]:
-                print('started Cluster Comm', rank)
                 # to avoid deadlock order send/recv btw pair of sats in-connection based on rank
                 if conn[0] < conn[1]:
                     comm.send(dest=conn[1], obj=copy.deepcopy(self_model.get_weights()),tag=6)
@@ -226,7 +220,6 @@ if rank != server_rank:
                     comm.send(dest=conn[1],obj=copy.deepcopy(self_model.get_weights()),tag=6)
                 for ind, weight in enumerate(ext_clust_aggr):
                     external_clusters_aggregate[ind] = external_clusters_aggregate[ind] + weight
-        print('rank', rank, 'End of Cluster Comm')
 
 # # Final Evaluation of global model - first initialize all to final global model, then eval on their local dataset
 if rank == server_rank:
@@ -235,5 +228,4 @@ else:
     global_weights = None
     global_weights = comm.bcast(global_weights, root=server_rank)
     self_model.set_weights(global_weights)
-    print('Global rank', rank, self_model.get_weights()[0][0])
     self_model.evaluate(x=data[2], y=data[3], batch_size=batch_size)
